@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import stat
+
+from setuptools import setup
+from setuptools.command.install import install
+from distutils import log
+
+import ctcdecode
+
+if sys.version_info < (3, 5):
+    print("THIS MODULE REQUIRES PYTHON 3.5+. YOU ARE CURRENTLY USING PYTHON {0}".format(sys.version))
+    sys.exit(1)
+
+
+FILES_TO_MARK_EXECUTABLE = ["flac-linux-x86", "flac-linux-x86_64", "flac-mac", "flac-win32.exe"]
+
+
+class InstallWithExtraSteps(install):
+    def run(self):
+        install.run(self)  # do the original install steps
+
+        # mark the FLAC executables as executable by all users (this fixes occasional issues when file permissions get messed up)
+        for output_path in self.get_outputs():
+            if os.path.basename(output_path) in FILES_TO_MARK_EXECUTABLE:
+                log.info("setting executable permissions on {}".format(output_path))
+                stat_info = os.stat(output_path)
+                os.chmod(
+                    output_path,
+                    stat_info.st_mode |
+                    stat.S_IRUSR | stat.S_IXUSR |  # owner can read/execute
+                    stat.S_IRGRP | stat.S_IXGRP |  # group can read/execute
+                    stat.S_IROTH | stat.S_IXOTH  # everyone else can read/execute
+                )
+
+
+setup(
+    name="CTCdecode",
+    version=ctcdecode.__version__,
+    packages=["ctcdecode"],
+    include_package_data=True,
+    cmdclass={"install": InstallWithExtraSteps},
+
+    # PyPI metadata
+    author=ctcdecode.__author__,
+    author_email="ikhsaan2008@gmail.com",
+    description="CTC decoder for ken_lm with language model and rescoring algoritm",
+    license=ctcdecode.__license__,
+    keywords="CTC decoder for ken_lm with language model and rescoring algoritm",
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Other OS",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Multimedia :: Sound/Audio :: Speech",
+    ],
+)
